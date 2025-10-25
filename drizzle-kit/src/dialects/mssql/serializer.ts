@@ -41,8 +41,24 @@ export const prepareSnapshot = async (
 
 	const { ddl: ddlCur, errors: errors2 } = interimToDDL(schema);
 
-	if (errors2.length > 0) {
-		console.log(errors2.map((it) => mssqlSchemaError(it)).join('\n'));
+	// Separate warnings (index_duplicate, column_duplicate, constraint_duplicate) from fatal errors
+	const warnings = errors2.filter((e) =>
+		e.type === 'index_duplicate' ||
+		e.type === 'column_duplicate' ||
+		e.type === 'constraint_duplicate'
+	);
+	const fatalErrors = errors2.filter((e) =>
+		e.type !== 'index_duplicate' &&
+		e.type !== 'column_duplicate' &&
+		e.type !== 'constraint_duplicate'
+	);
+
+	if (warnings.length > 0) {
+		console.log(warnings.map((it) => mssqlSchemaError(it)).join('\n'));
+	}
+
+	if (fatalErrors.length > 0) {
+		console.log(fatalErrors.map((it) => mssqlSchemaError(it)).join('\n'));
 		process.exit(1);
 	}
 
